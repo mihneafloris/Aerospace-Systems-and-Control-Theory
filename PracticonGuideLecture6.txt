@@ -1,0 +1,130 @@
+## Lecture 6.1 : State-space - A simple system ##
+
+A simple state-space system
+    > A = [-3, -20; 1, 0]
+    > B = [ 0.33333333; 0.0 ]
+    > C = [ 0, 1; 1, 0; -3, -20 ]
+    > D = [ 0.0; 0.0; 0.33333333 ]
+Script:
+    clear
+    m = 3
+    b = 9
+    k = 60
+
+    A = [ -b/m -k/m; 1 0]
+    B = [ 1/m; 0]
+    C = [ 0 1; 1 0; -b/m -k/m]
+    D = [ 0; 0; 1/m]
+
+    sys = ss(A, B, C, D)
+
+Testing system
+    > 1.492
+script:
+    clear
+    % parameter values
+    m = 3;
+    b = 9;
+    k = 60;
+
+    A = [ -b/m -k/m; 1 0];
+    B = [ 1/m; 0];
+    C = [ 0 1];
+    D = [ 0 ];
+    x0 = [1; 0]; % Added this initial state
+    % system
+    sys = ss(A, B, C, D);
+    initial(sys,x0) % should automatically plot it
+    % Reading off gives a period of 1.492
+
+Sine Response
+    amplitude at freq = 4.2130749: 
+    > 0.02596
+    amplitude at freq = 3.9370039: 
+    > 0.02637
+script:
+    clear
+    m = 3.0
+    b = 9.0
+    k = 60.0
+
+    A = [ -b/m -k/m; 1 0]
+    B = [ 1/m; 0]
+    C = [ 0 1]
+    D = [ 0]
+    sys = ss(A, B, C, D)
+
+    t = 0:0.01:10;
+    w1 = 4.2130749
+    w2 = 3.9370039
+    u1 = sin(t*w1);
+    u2 = sin(t*w2);
+
+    y1 = lsim(sys, u1, t);
+    y2 = lsim(sys, u2, t);
+    # plot(t, y1, t, y2)
+    # then read off the amplitude.
+
+Varying mass, stiffnes and damping
+    "Now is a good time to experiment a little. What would happen to the system's response if you increase (for example double) the mass mm of the block? And what happens if you increase the stiffnes kk? And what happens if you increase the damping bb?"
+    > all three are correct.
+explanation: re-use code from the previous question and using trial and error try stuff out.
+
+## Lecture 6.2: Conversion ##
+
+Converting between representations
+    > 1
+    > -0.4
+    > 3
+sctipt:
+    A = [-0.4 0 0; 0.4 -1.2 -5.0; 0 1 0]
+    B = [0.3; 0; 0]
+    C = [0 1 0; 0.1 0 1]
+    D = zeros(2,1)
+    sys = ss(A, B, C, D)
+
+    h = tf(sys)
+    roots(h.den{1})
+
+Transfer functino to a state-space system
+    > A = [-3.5527578, 1.3498728, 0; -4.1197782, -0.10651575, 0.69614273; -0.63963278, -0.82927933, 0.059273543]
+    > B = [-0.85522796; -0.096781514; 0.14737188]
+    > C = [-0.58463944, 0, 0; 2.0770823, -0.7891889, 0]
+    > D = [0, 0.5]
+script:
+    b0 = 0.2;
+    b1 = 0.1;
+    b2 = 0.5;
+    a0 = 2.3;
+    a1 = 6.3;
+    a2 = 3.6;
+    a3 = 1.0;
+
+    s = tf('s');
+    h = (b0 + b1*s + b2*s^2)/(a0 + a1*s + a2*s^2 + a3*s^3);
+
+    H = [h; h*s];
+    sys = ss(H);
+
+## Lecture 6.3: State-space systems from diagrams ##
+
+State space model from a diagram
+    > A = [0, -1.74, -1.5; 1, -1, 0; 0, 1, 0]
+    > B = [0.6, 1; 0. 0; 0,0]
+    > C = [0.4, 0, 1]
+    > D = [0, 0]
+
+script:
+    clear
+    k1 = 0.4;
+    k2 = 2.9;
+    k3 = 2.5;
+    k4 = 0.6;
+
+    % just a case of properly defining your state variables.
+    A = [0,-k4*k2,-k4*k3; 1, -1, 0; 0, 1, 0];
+    B = [k4, 1; 0, 0; 0, 0];
+    C = [k1, 0, 1];
+    D = [0, 0];
+
+    sys = ss(A,B,C,D);

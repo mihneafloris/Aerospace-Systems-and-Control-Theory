@@ -1,0 +1,203 @@
+## Lecture 8.1 Intro ##
+root-locus quiz
+    > 1
+    > The point -1 in the figure is part of the root-locus
+explanation:
+    the left-most pole will bugger off into -inf, the other two will join together and split out towards the zeroes.
+
+more root locus quiz
+    > 3
+    > The system in the figure can become unstable for K -> inf
+    > the system in the figure can develop an undamped oscillation
+
+
+Dominant Poles and step response
+    > 0.0236
+    > 0.2171
+    > 1
+script:
+    clear
+    s = tf('s');
+    G = 6205/(s*(s^2 + 13*s + 1281));
+
+    totalH = feedback(G,1); % automatically does feedback loop
+    % Now decompose it in H1 & H2. H1 is first order, H2 2nd order. So, we know
+    % that H1 only has a real pole: hence its value for tau can be gotten by
+    % checking the real pole in the poles of totalH.
+    realPole = pole(totalH); %this gives a real pole at 5, so we know 1/tau = 5.
+    H1 = 5/(5 + s);
+    % since H1 * H2 = totalH , H2 = totalH/H1.
+    H2 = minreal(totalH/H1);
+
+    % Checking if H1 * H2 = totalH:
+    checkH = H1*H2;
+    % checks out.
+
+    endt = 2.5;
+    dt = 0.1;
+    t = 0:dt:endt;
+
+    ytot = step(totalH, t);
+    y1 = step(H1, t);
+    y2 = step(H2, t);
+
+    hold on
+    plot(t, ytot);
+    plot(t, y1);
+    plot(t, y2);
+    hold off
+    legend('ytot','y1','y2')
+    % ytot looks a lot more like y1. This makes sense, because the pole for y1
+    % is much closer to 0.
+
+    % now the values needed:
+
+    D1 = trapz(t, abs(y1 - ytot));
+    D2 = trapz(t, abs(y2- ytot));
+
+## Lecture 8.2: Control ##
+
+Yaw Response of an Aircraft
+    > -1.97
+script:
+    # note: this script is a bit tricky and glitchy
+    clear
+    A = [-0.2 0.06 0 -1; 0 0 1 0; -17 0 -3.8 1; 9.4 0 -0.4 -0.6];
+    B = [-0.01 .06; 0 0; -32 5.4; 2.6 -7];
+    Byaw = B(:,2);
+    % output only r
+    C = [0 0 0 1];
+    D = 0;
+
+    sys = ss(A,B,C,D);
+    [y,t] = step(sys, 20);
+    y = y(:,:); %fixing dimension error
+
+    plot(t,y)
+
+Control with state-space systems
+    > A = [-0.2 0.06 0 -0.967; 0 0 1 0; -17 0 -3.8 3.97; 9.4 0 -0.4 -4.45]
+    > B = [-0.01 0.06; 0 0; -32 5.4; 2.6 -7]
+    > C = [1 0 0 0; 0 1 0 0; 0 0 1 0; 0 0 0 1]
+    > D = [0 0; 0 0; 0 0]
+script:
+    clear
+    Kr = -0.55;
+
+    % from previous question:
+    A = [-0.2 0.06 0 -1; 0 0 1 0; -17 0 -3.8 1; 9.4 0 -0.4 -0.6];
+    B = [-0.01 .06; 0 0; -32 5.4; 2.6 -7];
+
+    % output changes: all four as ouputs. use identity matrix.
+    C = [1 0 0 0; 0 1 0 0; 0 0 1 0; 0 0 0 1];
+    D = zeros(4,2);
+
+    sys = ss(A,B,C,D);
+    K = [0 0 0 0; 0 0 0 Kr];
+    fsys = feedback(sys,K);
+
+Control with state-space systems 2
+    > 0.0798
+    > 0.664
+    > -0.308
+    > -0.1258
+    > -0.2955
+script:
+    clear
+    Kr = -0.55;
+
+    %% Simple aircraft:
+    A = [-0.2 0.06 0 -1; 0 0 1 0; -17 0 -3.8 1; 9.4 0 -0.4 -0.6];
+    B = [-0.01 .06; 0 0; -32 5.4; 2.6 -7];
+    % only output r, the fourth state
+    C = [0 0 0 1];
+    D = [0 0];
+
+    simplesys = ss(A,B,C,D);
+
+    %% Yaw damper 1
+    Kr = -0.55;
+    K1 = [0; Kr];
+    sys1 = feedback(simplesys,K1);
+
+    %% Yaw damper 2 (with washout filter)
+    %copied the code from the page
+    K2 = [0; Kr * ss(-0.5, 0.5, -1, 1)];
+    sys2 = feedback(simplesys, K2);
+
+    %% the rest:
+
+    dt = 0.1;
+    t = 0:dt:20;
+
+    % input signal:
+    u = [(t' < 1), zeros(size(t'))];
+
+    ysimple = lsim(simplesys,u,t);
+    y1 = lsim(sys1,u,t);
+    y2 = lsim(sys2,u,t);
+
+    hold on;
+    plot(t, ysimple)
+    plot(t,y1)
+    plot(t,y2)
+    hold off
+    legend('simple','y1','y2')
+
+    dampsimple = damp(simplesys);
+    damp1 = damp(sys1);
+    damp2 = damp(sys2);
+
+## Lecture 8.3 Diagrams ##
+
+Roll control of an aircraft
+    > A = [-5 -2.25 0 -1.818; 4 0 0 0; 0 2.25 -0.9091 0; 0 0 1 0]
+    > B = [1; 0; 0; 0]
+    > C = [0 0 0 -0.9091; 0 1.125 0 0; 0 0 0 1.818]
+    > D = [0.5; 0; 0]
+script:
+    clear
+    Ka = 4;
+    Ta = 1.1;
+    Kap = 0.5;
+    s = tf('s');
+
+    %% Autopilot %%
+    % simply Kap...
+
+    %% Actuator %%
+    Ha = ss(9/(s^2 + 5*s + 9));
+
+    %% Roll dynamics %%
+    Hroll = ss(Ka/(Ta*s +1)/s);
+
+    %% Joining:
+    sys = append(Kap,Ha,Hroll);
+
+    Q = [ 1 -3; 2 1; 3 2];
+    inputs = [1];
+    outputs = [1 2 3];
+    sysc = connect(sys, Q, inputs, outputs);
+
+Control of the Moller SkyCar
+    > A = [-10 0 0 0 0 -16; 1 0 0 0 0 0; -5.938 0.1563 -1 -2 0 -10; 0 0 2 0 0 0; 0 0 0 1 0 0; 0 0 0 0 1 0]
+    > B = [16; 0; 10; 0; 0; 0]
+    > C = [0 0 0 0 0 1; -11.88 0.3125 0 0 0 -20]
+    > D = [0; 20]
+script:
+    % note that for some reason, the answer model switches the order of H1 & H2 around. it gives a different matrix but exactly the same model. 
+    clear
+    s = tf('s');
+    K = 0.5;
+
+    %% first controller %%
+    H1 = ss(K*(4*s^2 + 2*s + 1)/(s*(1+0.1*s)));
+    %% second controller %%
+    H2 = ss(1/(s^2*(s^2 + s + 4)));
+    %% joining
+    sys = append(H1, H2); %for order of outputs
+    Q = [2 1; 1 -2];
+    inputs = [1];
+    outputs = [2 1];
+
+    sysc = connect(sys, Q, inputs, outputs);

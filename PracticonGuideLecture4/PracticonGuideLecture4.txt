@@ -1,0 +1,129 @@
+note before using: I'm not sure if k changes per person,
+so check the script every time for varying k values.
+
+Script tyepes: matlab.
+
+transfer functions - closed loop
+    > num = [ 0.4, 5.0, 10.0 ]
+    > den = [ 1.0, 13.0, 36.0, 64.0, 10.0 ]
+script:
+    k1 = 1;
+    s = tf('s');
+    h1 = (1 + 0.4*s)/(s*(s^2 + 3*s + 6));
+    h2 = k1/(1 + 0.1*s);
+    % It's a normal closed loop system, textbook case.
+    heq = minreal(h1/(1 + h1*h2));
+    numerators = heq.num{1};
+    denominators = heq.den{1};
+
+transfer functions - Another manipulation
+    > num = [ 1.28, 8.56, 13.4 ]
+    > den = [ 1.0, 14.0, 57.0, 120.0, 108.0 ]
+script:
+    clear
+    s = tf('s');
+
+    k1 = 1;
+    k2 = 2.2;
+
+    h1 = k1/(2 + s);
+    h2 = (1 + 0.4*s)/(s^2 + 3*s + 6);
+    h3 = k2/(9 + s);
+
+    % Mind the parallel lines.
+    heq = minreal(h2*(h1 + h3));
+
+    numerators = heq.num{1};
+    denominators = heq.den{1};
+
+transfer functions - disturbance as input 1
+    > 1, 4
+    warning: numbering might differ in yours, so see attached handwritten document.
+explanation:
+    see attached document.
+
+transfer functions - disturbance as input 2
+    q1
+        > num = [ 5.0, 1.0 ]
+        > den = [ 1.0, 3.0, 10.0, 1.0 ]
+    q2
+        > num = [ 1.0, 3.2, 5.6, 1.0 ]
+        > den = [ 1.0, 3.0, 10.0, 1.0 ]
+    q3
+        > num = [ 5.0, 0.0 ]
+        > den = [ 1.0, 3.0, 10.0, 1.0 ]
+    q4
+        > num = [ 1.0, 3.0, 5.0, 0.0 ]
+        > den = [ 1.0, 3.0, 10.0, 1.0 ]
+script:
+    clear
+    s = tf('s');
+
+    k1 = 1;
+
+    h1 = 5/(s^2 + 3*s + 5);
+    g = k1 * (1 + 0.2/s);
+
+    % first one: disregard d(s), as we're checking changing inputs and not disturbances. full loop.
+    % Y(s) / u(s)
+    heq1 = minreal((g*h1)/(1+ g*h1));
+
+    % second one: what comes out of g with regards to u.
+    % still disregard d(s)
+    % c(s) / u(s)
+    heq2 = minreal(g/(1 + h1*g));
+
+    % third one: from disturbance to output.
+    % Y(s) / d(s)
+    % We already came up with this in the previous question.
+    heq3 = minreal(h1/(1 + h1*g));
+
+    % fourth one: from disturbance to control input.
+    % c(s) / d(s)
+    heq4 = minreal(1/(1 + g*h1));
+
+Signals - Take care of the time step
+    > 5
+    > 0.2
+script:
+    clear
+    % Beware, the sinoid that occurs is *not* the 5.2 hz sine.
+    dt = 0.2;
+    t = 0:dt:20;
+    f = 5.2; %Hz
+
+    x = sin(2*pi*f*t);
+    x2 = 0.5*sin(2*pi*0.2*t); % only making amplitude smaller to be able to discern it.
+
+    % zooming in on the second intersection with 0 gives T = 7.5
+
+    T = 5;
+    f1 = 1/T;
+
+    plot(t,x);
+    hold on;
+    plot(t,x2);
+
+Signals - Creating a ramp
+    > 941.07
+Script:
+    Quick note: the notation that practicon recommends is super shite, so instead just use this nice little functino I made. you can also find this in the archive. Just add it to path, and you can use it in your script.
+
+    SignalRamp.m
+        function rampPoints = SignalRamp(hstart, hend, time, dt)
+        % This function gives the vertical points of a ramp.
+        % the amount of points is dependent on the amount of
+        % time and the dt
+        timeSpan = 0:dt:time;
+        slope = (hend-hstart)/time;
+        rampPoints = hstart + slope*timeSpan;
+    
+    clear
+    dt = 0.15;
+    t = 0:dt:30;
+
+    x = [SignalRamp(0,4.94,3,dt), 4.94*ones(1,27/dt)];
+
+    plot(t,x)
+
+    sumAll = sum(x);
